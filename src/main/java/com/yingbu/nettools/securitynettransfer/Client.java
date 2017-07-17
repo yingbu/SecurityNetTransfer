@@ -127,8 +127,10 @@ public class Client extends Thread {
      */
     @SuppressWarnings("unused")
     private void log(Object o) {
+        /*
         String time = (new Timestamp(System.currentTimeMillis())).toString().substring(0, 19);
         System.out.println("[" + time + "] " + o.toString());
+        */
     }
 
     /**

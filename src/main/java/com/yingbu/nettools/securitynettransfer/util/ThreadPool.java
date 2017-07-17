@@ -2,6 +2,7 @@ package com.yingbu.nettools.securitynettransfer.util;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -11,20 +12,31 @@ import java.util.concurrent.TimeUnit;
 public class ThreadPool {
     private static ThreadPool currentThreadPool;
 
-    private ExecutorService poolService;
-    private ExecutorService poolWorker;
-    private int THREAD_POOL_SIZE = 32;
+    private ThreadPoolExecutor poolService;
+    private ThreadPoolExecutor poolWorker;
+    private static int THREAD_POOL_DEFAULT_SIZE;
+
+    static {
+        THREAD_POOL_DEFAULT_SIZE = 32;
+    }
 
     public static ThreadPool currentThreadPool(){
         if(currentThreadPool == null){
-            currentThreadPool = new ThreadPool();
+            currentThreadPool = new ThreadPool(THREAD_POOL_DEFAULT_SIZE);
         }
         return currentThreadPool;
     }
 
-    private ThreadPool() {
-        poolService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-        poolWorker = Executors.newFixedThreadPool(THREAD_POOL_SIZE * 3); //ClientThread -> DecryptForwardThread and EncryptForwardThread and 50% redundancy.
+    public static void initPoolSize(int poolsize){
+        if(currentThreadPool == null){
+            THREAD_POOL_DEFAULT_SIZE = poolsize;
+            currentThreadPool = new ThreadPool(poolsize);
+        }
+    }
+
+    private ThreadPool(int poolsize) {
+        poolService = (ThreadPoolExecutor) Executors.newFixedThreadPool(poolsize);
+        poolWorker = (ThreadPoolExecutor) Executors.newFixedThreadPool(poolsize * 3); //ClientThread -> DecryptForwardThread and EncryptForwardThread and 50% redundancy.
     }
 
     public void submitClientThread(Runnable thread){
@@ -58,5 +70,11 @@ public class ThreadPool {
             poolWorker.shutdownNow();
             System.out.println("shutdown finished");
         }
+    }
+
+    public String status(){
+        int service_actcount = poolService.getActiveCount();
+        int worker_actcount = poolWorker.getActiveCount();
+        return String.format("poolService:%d/%d poolWorker:%d/%d", service_actcount,THREAD_POOL_DEFAULT_SIZE,worker_actcount,THREAD_POOL_DEFAULT_SIZE*3);
     }
 }
